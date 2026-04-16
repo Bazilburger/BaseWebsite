@@ -10,6 +10,22 @@ function get_client_ip(): string
     return $_SERVER['REMOTE_ADDR'] ?? 'unknown';
 }
 
+function get_text_length(string $value): int
+{
+    if (function_exists('mb_strlen')) {
+        return mb_strlen($value, 'UTF-8');
+    }
+
+    if (function_exists('iconv_strlen')) {
+        $length = iconv_strlen($value, 'UTF-8');
+        if ($length !== false) {
+            return $length;
+        }
+    }
+
+    return strlen($value);
+}
+
 function is_rate_limited(string $client_ip): bool
 {
     $storage_dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'bazilburger_contact_rate_limit';
@@ -78,7 +94,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $message = str_replace("\0", '', $message);
     $message = preg_replace("/\r\n?/", "\n", $message);
 
-    if (strlen($message) > 5000) {
+    if (get_text_length($message) > 5000) {
         redirect_with_status('error', 'message_too_long', 303);
     }
 
